@@ -1,0 +1,12 @@
+[package]
+name = "kb_remapper"
+version = "0.1.0"
+authors = ["aQaTL <mmsoltys@outlook.com>"]
+
+[dependencies]
+winreg = "0.5"
+nuklear-rust = {version = "~0.5", features = ["rust_allocator"]}
+nuklear-backend-gdi = {version = "~0.2", features = ["piston_image"]}
+winapi = {version = "~0.3", features = ["windef", "minwindef", "winuser", "winbase", "wingdi"]}
+image = "0.19.0"
+
