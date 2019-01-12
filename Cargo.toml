@@ -1,6 +1,7 @@
 [package]
 name = "kb_remapper"
 version = "0.1.0"
+edition = "2018"
 authors = ["aQaTL <mmsoltys@outlook.com>"]
 
 [dependencies]

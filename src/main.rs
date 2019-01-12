@@ -1,13 +1,4 @@
-extern crate winreg;
-
-#[macro_use]
-extern crate nuklear;
-extern crate nuklear_backend_gdi;
-
-extern crate image;
-extern crate winapi;
-
-use nuklear::{Color, Context, Flags};
+use nuklear::{Color, Context, Flags, nk_string};
 use nuklear as nk;
 use nuklear_backend_gdi::*;
 
@@ -16,7 +7,7 @@ use winreg::RegKey;
 mod utils;
 mod keyboard;
 
-use keyboard as kb;
+use crate::keyboard as kb;
 
 static WINDOW_SIZE: (u16, u16) = (800, 600); //TODO make drawer window size public
 
@@ -30,9 +21,9 @@ fn main() {
 	let clear_color: Color = utils::color_from_hex(0xc47fef);
 
 
-	let mut buf = [0u8; 20];
+	let _buf = [0u8; 20];
 	let mut state = State {
-		keys: &kb::get_keys(),
+		keys: kb::get_keys(),
 	};
 	println!("{}", state.keys.len());
 
@@ -48,8 +39,8 @@ fn main() {
 	}
 }
 
-struct State<'a> {
-	keys: &'a Vec<kb::Key>,
+struct State {
+	keys: Vec<kb::Key>,
 }
 
 fn layout(ctx: &mut Context, _dr: &mut Drawer, state: &mut State) {
