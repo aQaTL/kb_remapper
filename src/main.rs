@@ -4,6 +4,8 @@ use nuklear_backend_gdi::*;
 
 use winreg::RegKey;
 
+use itertools::Itertools;
+
 mod utils;
 mod keyboard;
 
@@ -12,7 +14,10 @@ use crate::keyboard as kb;
 static WINDOW_SIZE: (u16, u16) = (800, 600); //TODO make drawer window size public
 
 fn main() {
-//    let names = load_registry();
+	let mappings = match load_registry() {
+		Ok(mappings) => mappings,
+		Err(err) => panic!("Error loading registry: {}", err), //TODO error handling (message to user?)
+	};
 
 	let mut allo = nk::Allocator::new_vec();
 	let (mut dr, mut ctx, font) = bundle(
@@ -23,9 +28,8 @@ fn main() {
 
 	let _buf = [0u8; 20];
 	let mut state = State {
-		keys: kb::get_keys(),
+		pairs: mappings.into_iter().map(|(key1, key2)| (Some(key1), Some(key2))).collect_vec(),
 	};
-	println!("{}", state.keys.len());
 
 	loop {
 		if !dr.process_events(&mut ctx) {
@@ -40,7 +44,7 @@ fn main() {
 }
 
 struct State {
-	keys: Vec<kb::Key>,
+	pairs: Vec<(Option<kb::Key>, Option<kb::Key>)>,
 }
 
 fn layout(ctx: &mut Context, _dr: &mut Drawer, state: &mut State) {
@@ -50,24 +54,98 @@ fn layout(ctx: &mut Context, _dr: &mut Drawer, state: &mut State) {
 		0 as Flags,
 	) {
 		panic!("ctx.begin returned false");
-}
+	}
 
 	ctx.layout_row_dynamic(30.0, 10);
-	for key in state.keys.iter() {
-		if ctx.button_text(key.label.as_str()) {
-			println!("{} {}", key.label, key.print_scan_code());
+	for key in kb::KEYS {
+		if ctx.button_text(key.label) {
+			on_key_button_press(state, key.clone());
 		}
 	}
 
+	let mut pair_to_delete = None;
+	for (idx, pair) in state.pairs.iter().enumerate() {
+		let key1 = match &pair.0 {
+			Some(k) => k.label,
+			None => "",
+		};
+		let key2 = match &pair.1 {
+			Some(k) => k.label,
+			None => "",
+		};
+
+		ctx.layout_row_dynamic(30.0, 4);
+		ctx.text(key1, nk::TextAlignment::NK_TEXT_LEFT as Flags);
+		ctx.text("->", nk::TextAlignment::NK_TEXT_LEFT as Flags);
+		ctx.text(key2, nk::TextAlignment::NK_TEXT_LEFT as Flags);
+
+		if ctx.button_text("[X]") {
+			pair_to_delete = Some(idx);
+			break;
+		}
+	}
+	if let Some(idx) = pair_to_delete {
+		state.pairs.remove(idx);
+	}
+
+	ctx.layout_row_dynamic(30.0, 1);
+	if ctx.button_text("Apply changes") {
+		apply_registry_changes(state);
+	}
 
 	ctx.end();
 }
 
+fn on_key_button_press(state: &mut State, key: kb::Key) {
+	match state.pairs.last_mut() {
+		Some(pair) => match pair.1 {
+			Some(_) => state.pairs.push((Some(key.clone()), None)),
+			None => if pair.0.as_ref().unwrap() != &key { pair.1 = Some(key.clone()) } else {},
+		}
+		None => state.pairs.push((Some(key.clone()), None)),
+	}
+}
 
-fn load_registry() -> Vec<String> {
+fn apply_registry_changes(state: &mut State) {}
+
+
+fn load_registry() -> Result<Vec<(kb::Key, kb::Key)>, std::io::Error> {
 	let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
-	hklm.enum_keys().into_iter().
-		filter_map(|x| x.ok()).
-		collect()
+	let kb_layout = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Control\Keyboard Layout")?;
+	let scancode_map = match kb_layout.get_raw_value("Scancode Map") {
+		Ok(map) => map.bytes,
+		Err(_) => return Ok(vec![]),
+	};
+
+	let keys = scancode_map.iter()
+		.skip(12)
+		.map(|x| *x as u32)
+		.chunks(4)
+		.into_iter()
+		.map(|chunk| chunk.collect::<Vec<_>>())
+		.filter_map(|mapping| {
+			let scan_code1 = mapping[0] | (mapping[1] << 8);
+			let scan_code2 = mapping[2] | (mapping[3] << 8);
+
+			let (mut key1, mut key2) = (None, None);
+			for key in kb::KEYS {
+				if key.scan_code == scan_code1 {
+					key1 = Some(key.clone());
+					if key2.is_some() { break; }
+				}
+				if key.scan_code == scan_code2 {
+					key2 = Some(key.clone());
+					if key1.is_some() { break; }
+				}
+			}
+
+			if key1.is_some() && key2.is_some() {
+				return Some((key1.unwrap(), key2.unwrap()));
+			} else {
+				return None;
+			}
+		}).collect_vec();
+
+	Ok(keys)
 }
 
