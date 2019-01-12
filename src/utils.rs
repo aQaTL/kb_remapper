@@ -8,3 +8,17 @@ pub fn color_from_hex(rgb: u32) -> Color {
 		a: 100u8,
 	}
 }
+
+pub fn get_window_size(hwnd: winapi::shared::windef::HWND) -> (i32, i32) {
+	unsafe {
+		use winapi::shared::windef::*;
+		let mut rect = RECT {
+			left: 0,
+			top: 0,
+			right: 0,
+			bottom: 0,
+		};
+		winapi::um::winuser::GetClientRect(hwnd, &mut rect as *mut RECT);
+		return (rect.right - rect.left, rect.bottom - rect.top);
+	}
+}

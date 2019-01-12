@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use nuklear::{Color, Context, Flags, nk_string};
 use nuklear as nk;
 use nuklear_backend_gdi::*;
@@ -11,30 +13,32 @@ mod keyboard;
 
 use crate::keyboard as kb;
 
-static WINDOW_SIZE: (u16, u16) = (800, 600); //TODO make drawer window size public
-
 fn main() {
 	let mappings = match load_registry() {
 		Ok(mappings) => mappings,
 		Err(err) => panic!("Error loading registry: {}", err), //TODO error handling (message to user?)
 	};
 
-	let mut allo = nk::Allocator::new_vec();
-	let (mut dr, mut ctx, font) = bundle(
-		"Nuklear Rust GDI Demo", WINDOW_SIZE.0, WINDOW_SIZE.1, "Segoe UI", 16, &mut allo,
-	);
-	let clear_color: Color = utils::color_from_hex(0xc47fef);
-
-
-	let _buf = [0u8; 20];
 	let mut state = State {
+		window_size: (800, 600),
 		pairs: mappings.into_iter().map(|(key1, key2)| (Some(key1), Some(key2))).collect_vec(),
 	};
+
+	let mut allo = nk::Allocator::new_vec();
+	let (mut dr, mut ctx, font) = bundle(
+		"Nuklear Rust GDI Demo",
+		state.window_size.0 as u16, state.window_size.1 as u16,
+		"Segoe UI", 16,
+		&mut allo,
+	);
+	let clear_color: Color = utils::color_from_hex(0xc47fef);
 
 	loop {
 		if !dr.process_events(&mut ctx) {
 			break;
 		}
+
+		state.window_size = utils::get_window_size(dr.window().unwrap());
 
 		ctx.style_set_font(dr.font_by_id(font).unwrap());
 
@@ -44,13 +48,14 @@ fn main() {
 }
 
 struct State {
+	window_size: (i32, i32),
 	pairs: Vec<(Option<kb::Key>, Option<kb::Key>)>,
 }
 
 fn layout(ctx: &mut Context, _dr: &mut Drawer, state: &mut State) {
 	if !ctx.begin(
 		nk_string!("kb_remapper"),
-		nk::Rect { x: 0.0f32, y: 0.0f32, w: WINDOW_SIZE.0 as f32, h: WINDOW_SIZE.1 as f32 },
+		nk::Rect { x: 0.0f32, y: 0.0f32, w: state.window_size.0 as f32, h: state.window_size.1 as f32 },
 		0 as Flags,
 	) {
 		panic!("ctx.begin returned false");
