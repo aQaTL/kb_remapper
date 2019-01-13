@@ -4,15 +4,25 @@ use nuklear::{Color, Context, Flags, nk_string};
 use nuklear as nk;
 use nuklear_backend_gdi::*;
 
+use std::io::{Error, ErrorKind};
+
 mod utils;
 mod keyboard;
 
 use crate::keyboard as kb;
 
-fn main() -> Result<(), std::io::Error> {
+fn main() {
+	let key_mappings = match kb::load_key_mappings() {
+		Ok(km) => km,
+		Err(err) => {
+			utils::panic_with_message_box(err, None);
+			vec![] //Calm down compiler
+		}
+	};
 	let mut state = State {
 		window_size: (800, 600),
-		pairs: kb::load_key_mappings()?, //TODO error handling (message to user?)
+		pairs: key_mappings, //TODO error handling (message to user?)
+		info: String::new(),
 	};
 
 	let mut allo = nk::Allocator::new_vec();
@@ -36,15 +46,15 @@ fn main() -> Result<(), std::io::Error> {
 		layout(&mut ctx, &mut dr, &mut state);
 		dr.render(&mut ctx, clear_color);
 	}
-	Ok(())
 }
 
 struct State {
 	window_size: (i32, i32),
 	pairs: Vec<(Option<kb::Key>, Option<kb::Key>)>,
+	info: String,
 }
 
-fn layout(ctx: &mut Context, _dr: &mut Drawer, state: &mut State) {
+fn layout(ctx: &mut Context, dr: &mut Drawer, state: &mut State) {
 	if !ctx.begin(
 		nk_string!("kb_remapper"),
 		nk::Rect { x: 0.0f32, y: 0.0f32, w: state.window_size.0 as f32, h: state.window_size.1 as f32 },
@@ -87,7 +97,12 @@ fn layout(ctx: &mut Context, _dr: &mut Drawer, state: &mut State) {
 
 	ctx.layout_row_dynamic(30.0, 1);
 	if ctx.button_text("Apply changes") {
-		apply_registry_changes(state);
+		apply_registry_changes(state, dr);
+	}
+
+	if !state.info.is_empty() {
+		ctx.layout_row_dynamic(20.0, 1);
+		ctx.text(&state.info, nk::TextAlignment::NK_TEXT_CENTERED as Flags)
 	}
 
 	ctx.end();
@@ -103,6 +118,15 @@ fn on_key_button_press(state: &mut State, key: kb::Key) {
 	}
 }
 
-fn apply_registry_changes(state: &mut State) {
-	kb::save_key_mappings(&state.pairs).unwrap();
+
+fn apply_registry_changes(state: &mut State, dr: &Drawer) {
+	match kb::save_key_mappings(&state.pairs) {
+		Ok(_) => state.info = String::from("Saved successfully. Reboot the computer to apply the changes."),
+		Err(err) => match err.kind() {
+			ErrorKind::PermissionDenied => {
+				state.info = String::from("Permission denied. Run as administrator to make system changes.")
+			}
+			_ => utils::panic_with_message_box(err, Some(dr.window().unwrap())),
+		},
+	}
 }

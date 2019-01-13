@@ -9,9 +9,11 @@ pub fn color_from_hex(rgb: u32) -> Color {
 	}
 }
 
-pub fn get_window_size(hwnd: winapi::shared::windef::HWND) -> (i32, i32) {
+use winapi::shared::windef::{HWND, RECT};
+use winapi::um::winuser::{MessageBoxW, MB_ICONERROR};
+
+pub fn get_window_size(hwnd: HWND) -> (i32, i32) {
 	unsafe {
-		use winapi::shared::windef::*;
 		let mut rect = RECT {
 			left: 0,
 			top: 0,
@@ -21,4 +23,17 @@ pub fn get_window_size(hwnd: winapi::shared::windef::HWND) -> (i32, i32) {
 		winapi::um::winuser::GetClientRect(hwnd, &mut rect as *mut RECT);
 		return (rect.right - rect.left, rect.bottom - rect.top);
 	}
+}
+
+pub fn panic_with_message_box(err: impl std::error::Error, hwnd: Option<HWND>) {
+	unsafe {
+		MessageBoxW(hwnd.unwrap_or(std::ptr::null_mut()),
+					err.to_string()
+						.encode_utf16()
+						.chain("\0".encode_utf16())
+						.collect::<Vec<_>>().as_ptr(),
+					"Panic\0".encode_utf16().collect::<Vec<_>>().as_ptr(),
+					MB_ICONERROR);
+	}
+	panic!("{:?}", err);
 }
