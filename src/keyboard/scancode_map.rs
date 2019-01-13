@@ -15,7 +15,10 @@ type KeyMapping = (Option<Key>, Option<Key>);
 pub fn load_key_mappings() -> Result<Vec<KeyMapping>, Error> {
 	let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
 	let keyboard_layout = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Control\Keyboard Layout")?;
-	let scancode_map = keyboard_layout.get_raw_value("Scancode Map")?.bytes;
+	let scancode_map = match keyboard_layout.get_raw_value("Scancode Map") {
+		Ok(value) => value.bytes,
+		Err(_) => return Ok(vec![]),
+	};
 
 	let mut rdr = std::io::Cursor::new(scancode_map);
 	rdr.set_position(4 * 2); //Skips version and flag headers
