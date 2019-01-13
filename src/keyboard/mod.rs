@@ -7,12 +7,6 @@ pub struct Key {
 	pub scan_code: u16,
 }
 
-impl Key {
-	pub fn print_scan_code(&self) -> String {
-		format!("{:02x},{:02x}", self.scan_code & 0xff, self.scan_code & 0xff00)
-	}
-}
-
 pub static KEYS: &[Key] = &[
 	Key { label: "~ `", scan_code: 0x29 },
 	Key { label: "! 1", scan_code: 0x02 },

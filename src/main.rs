@@ -4,7 +4,7 @@ use nuklear::{Color, Context, Flags, nk_string};
 use nuklear as nk;
 use nuklear_backend_gdi::*;
 
-use std::io::{Error, ErrorKind};
+use std::io::ErrorKind;
 
 mod utils;
 mod keyboard;
