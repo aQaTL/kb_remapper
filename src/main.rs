@@ -111,10 +111,12 @@ fn layout(ctx: &mut Context, dr: &mut Drawer, state: &mut State) {
 fn on_key_button_press(state: &mut State, key: kb::Key) {
 	match state.pairs.last_mut() {
 		Some(pair) => match pair.1 {
-			Some(_) => state.pairs.push((Some(key.clone()), None)),
+			Some(_) if key.scan_code != 0 => state.pairs.push((Some(key.clone()), None)),
 			None => if pair.0.as_ref().unwrap() != &key { pair.1 = Some(key.clone()) } else {},
+			_ => (),
 		}
-		None => state.pairs.push((Some(key.clone()), None)),
+		None if key.scan_code != 0 => state.pairs.push((Some(key.clone()), None)),
+		_ => (),
 	}
 }
 

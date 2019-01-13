@@ -1,4 +1,5 @@
 mod scancode_map;
+
 pub use self::scancode_map::{*};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -8,6 +9,7 @@ pub struct Key {
 }
 
 pub static KEYS: &[Key] = &[
+	Key { label: "null", scan_code: 0x00 },
 	Key { label: "~ `", scan_code: 0x29 },
 	Key { label: "! 1", scan_code: 0x02 },
 	Key { label: "@ 2", scan_code: 0x03 },
