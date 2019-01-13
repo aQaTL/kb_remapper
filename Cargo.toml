@@ -5,7 +5,7 @@ edition = "2018"
 authors = ["aQaTL <mmsoltys@outlook.com>"]
 
 [dependencies]
-winreg = "0.5"
+winreg = "0.6"
 nuklear-rust = {version = "~0.5", features = ["rust_allocator"]}
 nuklear-backend-gdi = {version = "~0.2", features = ["piston_image"]}
 winapi = {version = "~0.3", features = ["windef", "minwindef", "winuser", "winbase", "wingdi"]}

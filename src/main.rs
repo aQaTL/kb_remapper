@@ -104,5 +104,5 @@ fn on_key_button_press(state: &mut State, key: kb::Key) {
 }
 
 fn apply_registry_changes(state: &mut State) {
-	kb::save_key_mappings(&state.pairs);
+	kb::save_key_mappings(&state.pairs).unwrap();
 }
