@@ -21,7 +21,7 @@ fn main() {
 	};
 	let mut state = State {
 		window_size: (800, 600),
-		pairs: key_mappings, //TODO error handling (message to user?)
+		pairs: key_mappings,
 		info: String::new(),
 	};
 
