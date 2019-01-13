@@ -136,6 +136,7 @@ dependencies = [
 name = "kb_remapper"
 version = "0.1.0"
 dependencies = [
+ "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nuklear-backend-gdi 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

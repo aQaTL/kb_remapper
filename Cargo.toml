@@ -11,3 +11,4 @@ nuklear-backend-gdi = {version = "~0.2", features = ["piston_image"]}
 winapi = {version = "~0.3", features = ["windef", "minwindef", "winuser", "winbase", "wingdi"]}
 image = "0.19.0"
 itertools = "0.8"
+byteorder = "1"

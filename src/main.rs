@@ -4,24 +4,15 @@ use nuklear::{Color, Context, Flags, nk_string};
 use nuklear as nk;
 use nuklear_backend_gdi::*;
 
-use winreg::RegKey;
-
-use itertools::Itertools;
-
 mod utils;
 mod keyboard;
 
 use crate::keyboard as kb;
 
-fn main() {
-	let mappings = match load_registry() {
-		Ok(mappings) => mappings,
-		Err(err) => panic!("Error loading registry: {}", err), //TODO error handling (message to user?)
-	};
-
+fn main() -> Result<(), std::io::Error> {
 	let mut state = State {
 		window_size: (800, 600),
-		pairs: mappings.into_iter().map(|(key1, key2)| (Some(key1), Some(key2))).collect_vec(),
+		pairs: kb::load_key_mappings()?, //TODO error handling (message to user?)
 	};
 
 	let mut allo = nk::Allocator::new_vec();
@@ -45,6 +36,7 @@ fn main() {
 		layout(&mut ctx, &mut dr, &mut state);
 		dr.render(&mut ctx, clear_color);
 	}
+	Ok(())
 }
 
 struct State {
@@ -111,46 +103,6 @@ fn on_key_button_press(state: &mut State, key: kb::Key) {
 	}
 }
 
-fn apply_registry_changes(state: &mut State) {}
-
-
-fn load_registry() -> Result<Vec<(kb::Key, kb::Key)>, std::io::Error> {
-	let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
-	let kb_layout = hklm.open_subkey(r"SYSTEM\CurrentControlSet\Control\Keyboard Layout")?;
-	let scancode_map = match kb_layout.get_raw_value("Scancode Map") {
-		Ok(map) => map.bytes,
-		Err(_) => return Ok(vec![]),
-	};
-
-	let keys = scancode_map.iter()
-		.skip(12)
-		.map(|x| *x as u32)
-		.chunks(4)
-		.into_iter()
-		.map(|chunk| chunk.collect::<Vec<_>>())
-		.filter_map(|mapping| {
-			let scan_code1 = mapping[0] | (mapping[1] << 8);
-			let scan_code2 = mapping[2] | (mapping[3] << 8);
-
-			let (mut key1, mut key2) = (None, None);
-			for key in kb::KEYS {
-				if key.scan_code == scan_code1 {
-					key1 = Some(key.clone());
-					if key2.is_some() { break; }
-				}
-				if key.scan_code == scan_code2 {
-					key2 = Some(key.clone());
-					if key1.is_some() { break; }
-				}
-			}
-
-			if key1.is_some() && key2.is_some() {
-				return Some((key1.unwrap(), key2.unwrap()));
-			} else {
-				return None;
-			}
-		}).collect_vec();
-
-	Ok(keys)
+fn apply_registry_changes(state: &mut State) {
+	kb::save_key_mappings(&state.pairs);
 }
-

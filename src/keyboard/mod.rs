@@ -1,7 +1,10 @@
-#[derive(Clone, Eq, PartialEq)]
+mod scancode_map;
+pub use self::scancode_map::{*};
+
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Key {
 	pub label: &'static str,
-	pub scan_code: u32,
+	pub scan_code: u16,
 }
 
 impl Key {
