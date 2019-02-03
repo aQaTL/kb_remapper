@@ -27,7 +27,7 @@ fn main() {
 
 	let mut allo = nk::Allocator::new_vec();
 	let (mut dr, mut ctx, font) = bundle(
-		"Nuklear Rust GDI Demo",
+		"kb_remapper",
 		state.window_size.0 as u16, state.window_size.1 as u16,
 		"Segoe UI", 16,
 		&mut allo,
